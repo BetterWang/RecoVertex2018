@@ -1,9 +1,9 @@
 // -*- C++ -*-
 //
-// Package:    V0Producer
-// Class:      V0Producer
+// Package:    D0Producer
+// Class:      D0Producer
 // 
-/**\class V0Producer V0Producer.h RecoVertex/V0Producer/interface/V0Producer.h
+/**\class D0Producer D0Producer.h RecoVertex/D0Producer/interface/D0Producer.h
 
  Description: <one line class summary>
 
@@ -11,14 +11,12 @@
      <Notes on implementation>
 */
 //
-// Original Author:  Brian Drell
-//         Created:  Fri May 18 22:57:40 CEST 2007
-// $Id: V0Producer.h,v 1.8 2009/12/18 20:45:08 wmtan Exp $
+// Original Author:  Wei Li 
 //
 //
 
-#ifndef RECOVERTEX__V0_PRODUCER_H
-#define RECOVERTEX__V0_PRODUCER_H
+#ifndef RECOVERTEX__D0_PRODUCER_H
+#define RECOVERTEX__D0_PRODUCER_H
 
 // system include files
 #include <memory>
@@ -35,15 +33,14 @@
 #include "FWCore/Framework/interface/ESHandle.h"
 
 #include "DataFormats/VertexReco/interface/Vertex.h"
-//#include "DataFormats/V0Candidate/interface/V0Candidate.h"
 #include "DataFormats/Candidate/interface/VertexCompositeCandidate.h"
 
-#include "RecoVertex/V0Producer/interface/V0Fitter.h"
+#include "RecoVertex/D0Producer/interface/D0Fitter.h"
 
-class V0Producer : public edm::EDProducer {
+class D0Producer : public edm::EDProducer {
 public:
-  explicit V0Producer(const edm::ParameterSet&);
-  ~V0Producer();
+  explicit D0Producer(const edm::ParameterSet&);
+  ~D0Producer();
 
 private:
   //virtual void beginJob() ;
@@ -51,7 +48,7 @@ private:
   virtual void produce(edm::Event&, const edm::EventSetup&);
   virtual void endJob() ;
 
-  V0Fitter theVees; 
+  D0Fitter theVees; 
 //  edm::ParameterSet theParams;
 };
 
