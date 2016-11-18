@@ -721,8 +721,8 @@ void V0Fitter::fitAll(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
          double dxyvtx = theTrackRefs[trdx]->dxy(bestvtx);
          if(fabs(dzvtx)>50 || fabs(dxyvtx)>50) continue;
 
-         double dzerror = sqrt(tmpRef->dzError()*tmpRef->dzError()+zVtxError*zVtxError);
-         double dxyerror = sqrt(tmpRef->d0Error()*tmpRef->d0Error()+xVtxError*yVtxError);
+         double dzerror = sqrt(theTrackRefs[trdx]->dzError()*theTrackRefs[trdx]->dzError()+zVtxError*zVtxError);
+         double dxyerror = sqrt(theTrackRefs[trdx]->d0Error()*theTrackRefs[trdx]->d0Error()+xVtxError*yVtxError);
          double dauLongImpactSig = dzvtx/dzerror;
          double dauTransImpactSig = dxyvtx/dxyerror;
          if( fabs(dauTransImpactSig) < batDauTransImpactSigCut || fabs(dauLongImpactSig) < batDauLongImpactSigCut ) continue;
