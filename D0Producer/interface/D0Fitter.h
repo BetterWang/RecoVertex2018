@@ -93,10 +93,13 @@ class D0Fitter {
   edm::EDGetTokenT<reco::BeamSpot> token_beamSpot;
 
   // Cuts
+  double mPiKCutMin;
+  double mPiKCutMax;
   double tkDCACut;
   double tkChi2Cut;
   int    tkNhitsCut;
   double tkPtCut;
+  double tkEtaCut;
   double chi2Cut;
   double rVtxCut;
   double rVtxSigCut;
@@ -106,6 +109,9 @@ class D0Fitter {
   double d0MassCut;
   double dauTransImpactSigCut;
   double dauLongImpactSigCut;
+  double VtxChiProbCut;
+  double dPtCut;
+  double alphaCut;
 
   std::vector<reco::TrackBase::TrackQuality> qualities;
 };

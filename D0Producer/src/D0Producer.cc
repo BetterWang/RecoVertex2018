@@ -61,6 +61,8 @@ void D0Producer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
 
    // Write the collections to the Event
    iEvent.put( d0Candidates, std::string("D0") );
+    
+    theVees.resetAll();
 }
 
 

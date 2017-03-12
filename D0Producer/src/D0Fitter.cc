@@ -38,6 +38,8 @@
 #include <Math/Functions.h>
 #include <Math/SVector.h>
 #include <Math/SMatrix.h>
+#include <TMath.h>
+#include <TVector3.h>
 #include "TrackingTools/IPTools/interface/IPTools.h"
 #include "CommonTools/Statistics/interface/ChiSquaredProbability.h"
 
@@ -57,9 +59,9 @@ const float d0Mass = 1.86484;
 const float lambdaCMass = 2.28646;
 const float xiMass = 1.32171;
 const float omegaMass = 1.67245;
-float piMass_sigma = piMass*1.e-6;
-float protonMass_sigma = protonMass*1.e-6;
-float kaonMass_sigma = kaonMass*1.e-6;
+float piMass_sigma = 3.5E-7f;
+float protonMass_sigma = 8E-8f;
+float kaonMass_sigma = 1.6E-5f;
 float kShortMass_sigma = kShortMass*1.e-6;
 float lambdaMass_sigma = lambdaMass*1.e-6;
 float d0Mass_sigma = d0Mass*1.e-6;
@@ -78,10 +80,13 @@ D0Fitter::D0Fitter(const edm::ParameterSet& theParameters,  edm::ConsumesCollect
   token_vertices = iC.consumes<reco::VertexCollection>(theParameters.getParameter<edm::InputTag>("vertexRecoAlgorithm"));
 
   // Second, initialize post-fit cuts
+  mPiKCutMin = theParameters.getParameter<double>(string("mPiKCutMin"));
+  mPiKCutMax = theParameters.getParameter<double>(string("mPiKCutMax"));
   tkDCACut = theParameters.getParameter<double>(string("tkDCACut"));
   tkChi2Cut = theParameters.getParameter<double>(string("tkChi2Cut"));
   tkNhitsCut = theParameters.getParameter<int>(string("tkNhitsCut"));
   tkPtCut = theParameters.getParameter<double>(string("tkPtCut"));
+  tkEtaCut = theParameters.getParameter<double>(string("tkEtaCut"));
   chi2Cut = theParameters.getParameter<double>(string("vtxChi2Cut"));
   rVtxCut = theParameters.getParameter<double>(string("rVtxCut"));
   rVtxSigCut = theParameters.getParameter<double>(string("vtxSignificance2DCut"));
@@ -91,6 +96,9 @@ D0Fitter::D0Fitter(const edm::ParameterSet& theParameters,  edm::ConsumesCollect
   d0MassCut = theParameters.getParameter<double>(string("d0MassCut"));
   dauTransImpactSigCut = theParameters.getParameter<double>(string("dauTransImpactSigCut"));
   dauLongImpactSigCut = theParameters.getParameter<double>(string("dauLongImpactSigCut"));
+  VtxChiProbCut = theParameters.getParameter<double>(string("VtxChiProbCut"));
+  dPtCut = theParameters.getParameter<double>(string("dPtCut"));
+  alphaCut = theParameters.getParameter<double>(string("alphaCut"));
 
   std::vector<std::string> qual = theParameters.getParameter<std::vector<std::string> >("trackQualities");
   for (unsigned int ndx = 0; ndx < qual.size(); ndx++) {
@@ -181,7 +189,7 @@ void D0Fitter::fitAll(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
 
     if( tmpRef->normalizedChi2() < tkChi2Cut &&
         tmpRef->numberOfValidHits() >= tkNhitsCut &&
-        tmpRef->pt() > tkPtCut ) {
+        tmpRef->pt() > tkPtCut && fabs(tmpRef->eta()) < tkEtaCut ) {
 //      TransientTrack tmpTk( *tmpRef, &(*bFieldHandle), globTkGeomHandle );
       TransientTrack tmpTk( *tmpRef, magField );
 
@@ -259,8 +267,32 @@ void D0Fitter::fitAll(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
       GlobalPoint cxPt = cApp.crossingPoint();
 
       if (dca < 0. || dca > tkDCACut) continue;
-      if (sqrt( cxPt.x()*cxPt.x() + cxPt.y()*cxPt.y() ) > 120. 
-          || std::abs(cxPt.z()) > 300.) continue;
+//      if (sqrt( cxPt.x()*cxPt.x() + cxPt.y()*cxPt.y() ) > 120. 
+//          || std::abs(cxPt.z()) > 300.) continue;
+
+      // Get trajectory states for the tracks at POCA for later cuts
+      TrajectoryStateClosestToPoint posTSCP =
+        posTransTkPtr->trajectoryStateClosestToPoint( cxPt );
+      TrajectoryStateClosestToPoint negTSCP =
+        negTransTkPtr->trajectoryStateClosestToPoint( cxPt );
+
+      if( !posTSCP.isValid() || !negTSCP.isValid() ) continue;
+
+      double totalE1 = sqrt( posTSCP.momentum().mag2() + kaonMassSquared ) +
+                      sqrt( negTSCP.momentum().mag2() + piMassSquared );
+      double totalE1Sq = totalE1*totalE1;
+
+      double totalE2 = sqrt( posTSCP.momentum().mag2() + piMassSquared ) +
+                      sqrt( negTSCP.momentum().mag2() + kaonMassSquared );
+      double totalE2Sq = totalE2*totalE2;
+
+      double totalPSq =
+        ( posTSCP.momentum() + negTSCP.momentum() ).mag2();
+
+      double mass1 = sqrt( totalE1Sq - totalPSq);
+      double mass2 = sqrt( totalE2Sq - totalPSq);
+
+      if( (mass1 > mPiKCutMax || mass1 < mPiKCutMin) && (mass2 > mPiKCutMax || mass2 < mPiKCutMin)) continue;
 
       // Create the vertex fitter object and vertex the tracks
     
@@ -293,13 +325,16 @@ void D0Fitter::fitAll(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
         RefCountedKinematicVertex d0DecayVertex = d0Vertex->currentDecayVertex();
         if (!d0DecayVertex->vertexIsValid()) continue;
 
-        if ( d0DecayVertex->chiSquared()<0 || d0DecayVertex->chiSquared()>1000 ) continue;
+        //if ( d0DecayVertex->chiSquared()<0 || d0DecayVertex->chiSquared()>1000 ) continue;
 
-        float d0C2Prob =
-           ChiSquaredProbability((double)(d0DecayVertex->chiSquared()),(double)(d0DecayVertex->degreesOfFreedom()));
-        if (d0C2Prob < 0.0001) continue;
+        //float d0C2Prob =
+        //   ChiSquaredProbability((double)(d0DecayVertex->chiSquared()),(double)(d0DecayVertex->degreesOfFreedom()));
+        //if (d0C2Prob < 0.0001) continue;
 
-        if ( d0Cand->currentState().mass() > 2.5 || d0Cand->currentState().mass() < 1.0) continue;
+	float d0C2Prob = TMath::Prob(d0DecayVertex->chiSquared(),d0DecayVertex->degreesOfFreedom());
+	if (d0C2Prob < VtxChiProbCut) continue;
+
+        //if ( d0Cand->currentState().mass() > 2.5 || d0Cand->currentState().mass() < 1.0) continue;
 
         d0Vertex->movePointerToTheFirstChild();
         RefCountedKinematicParticle posCand = d0Vertex->currentParticle();
@@ -362,12 +397,20 @@ void D0Fitter::fitAll(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
         sigmaLvtxMag = sqrt(ROOT::Math::Similarity(d0TotalCov, distanceVector3D)) / lVtxMag;
         sigmaRvtxMag = sqrt(ROOT::Math::Similarity(d0TotalCov, distanceVector2D)) / rVtxMag;
 
+          TVector3 svpvVec;
+          svpvVec.SetXYZ(d0Vtx.x() - xVtx,
+                         d0Vtx.y() - yVtx,
+                         d0Vtx.z() - zVtx);
+          TVector3 dVec;
+          dVec.SetXYZ(d0TotalP.x(), d0TotalP.y(), d0TotalP.z());
+          double alpha = svpvVec.Angle(dVec);
+          
         if( d0NormalizedChi2 > chi2Cut ||
             rVtxMag < rVtxCut ||
             rVtxMag / sigmaRvtxMag < rVtxSigCut ||
             lVtxMag < lVtxCut ||
             lVtxMag / sigmaLvtxMag < lVtxSigCut ||
-            cos(d0Angle) < collinCut
+            cos(d0Angle) < collinCut || alpha > alphaCut
         ) continue;
 
         VertexCompositeCandidate* theD0 = 0;
@@ -391,7 +434,8 @@ void D0Fitter::fitAll(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
         theD0->setPdgId(pdg_id[i]);
         addp4.set( *theD0 );
         if( theD0->mass() < d0Mass + d0MassCut &&
-            theD0->mass() > d0Mass - d0MassCut ) {
+            theD0->mass() > d0Mass - d0MassCut &&
+	    theD0->pt() > dPtCut ) {
           theD0s.push_back( *theD0 );
         }
 
@@ -400,9 +444,12 @@ void D0Fitter::fitAll(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
     }
   }
 }
-
 // Get methods
 
 const reco::VertexCompositeCandidateCollection& D0Fitter::getD0() const {
   return theD0s;
+}
+
+void D0Fitter::resetAll() {
+    theD0s.clear();
 }
