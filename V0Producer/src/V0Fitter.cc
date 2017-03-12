@@ -68,13 +68,16 @@ float xiMass_sigma = xiMass*1.e-6;
 float omegaMass_sigma = omegaMass*1.e-6;
 
 // Constructor and (empty) destructor
-V0Fitter::V0Fitter(const edm::ParameterSet& theParameters,
-		   const edm::Event& iEvent, const edm::EventSetup& iSetup) {
+V0Fitter::V0Fitter(const edm::ParameterSet& theParameters,  edm::ConsumesCollector && iC) {
+//		   const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::ConsumesCollector && iC) {
   using std::string;
 
   // Get the track reco algorithm from the ParameterSet
-  recoAlg = theParameters.getParameter<edm::InputTag>("trackRecoAlgorithm");
-  vtxAlg  = theParameters.getParameter<edm::InputTag>("vertexRecoAlgorithm");
+  token_beamSpot = iC.consumes<reco::BeamSpot>(edm::InputTag("offlineBeamSpot"));
+  token_tracks = iC.consumes<reco::TrackCollection>(theParameters.getParameter<edm::InputTag>("trackRecoAlgorithm"));
+  token_vertices = iC.consumes<reco::VertexCollection>(theParameters.getParameter<edm::InputTag>("vertexRecoAlgorithm"));
+//  recoAlg = theParameters.getParameter<edm::InputTag>("trackRecoAlgorithm");
+//  vtxAlg  = theParameters.getParameter<edm::InputTag>("vertexRecoAlgorithm");
 
   // ------> Initialize parameters from PSet. ALL TRACKED, so no defaults.
   // First set bits to do various things:
@@ -139,7 +142,7 @@ V0Fitter::V0Fitter(const edm::ParameterSet& theParameters,
 
   //std::cout << "Entering V0Producer" << std::endl;
 
-  fitAll(iEvent, iSetup);
+//  fitAll(iEvent, iSetup);
 
   // FOR DEBUG:
   //cleanupFileOutput();
@@ -172,21 +175,25 @@ void V0Fitter::fitAll(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
   Handle<reco::VertexCollection> theVertexHandle;
   Handle<reco::BeamSpot> theBeamSpotHandle;
   ESHandle<MagneticField> bFieldHandle;
-  ESHandle<TrackerGeometry> trackerGeomHandle;
-  ESHandle<GlobalTrackingGeometry> globTkGeomHandle;
+//  ESHandle<TrackerGeometry> trackerGeomHandle;
+//  ESHandle<GlobalTrackingGeometry> globTkGeomHandle;
+
   //cout << "Check 0" << endl;
 
   // Get the tracks, vertices from the event, and get the B-field record
   //  from the EventSetup
-  iEvent.getByLabel(recoAlg, theTrackHandle);
-  iEvent.getByLabel(vtxAlg,  theVertexHandle);
-  iEvent.getByLabel(std::string("offlineBeamSpot"), theBeamSpotHandle);
+  iEvent.getByToken(token_tracks, theTrackHandle); 
+  iEvent.getByToken(token_vertices, theVertexHandle);
+  iEvent.getByToken(token_beamSpot, theBeamSpotHandle);  
+//  iEvent.getByLabel(recoAlg, theTrackHandle);
+//  iEvent.getByLabel(vtxAlg,  theVertexHandle);
+//  iEvent.getByLabel(std::string("offlineBeamSpot"), theBeamSpotHandle);
   if( !theTrackHandle->size() ) return;
   iSetup.get<IdealMagneticFieldRecord>().get(bFieldHandle);
-  iSetup.get<TrackerDigiGeometryRecord>().get(trackerGeomHandle);
-  iSetup.get<GlobalTrackingGeometryRecord>().get(globTkGeomHandle);
+//  iSetup.get<TrackerDigiGeometryRecord>().get(trackerGeomHandle);
+//  iSetup.get<GlobalTrackingGeometryRecord>().get(globTkGeomHandle);
 
-  trackerGeom = trackerGeomHandle.product();
+//  trackerGeom = trackerGeomHandle.product();
   magField = bFieldHandle.product();
 
   bool isVtxPV = 0;
@@ -236,7 +243,8 @@ void V0Fitter::fitAll(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
     if( tmpRef->normalizedChi2() < tkChi2Cut &&
         tmpRef->numberOfValidHits() >= tkNhitsCut &&
         tmpRef->pt() > tkPtCut ) {
-      TransientTrack tmpTk( *tmpRef, &(*bFieldHandle), globTkGeomHandle );
+//      TransientTrack tmpTk( *tmpRef, &(*bFieldHandle), globTkGeomHandle );
+      TransientTrack tmpTk( *tmpRef, magField );
 
       math::XYZPoint bestvtx(xVtx,yVtx,zVtx);
       double dzvtx = tmpRef->dz(bestvtx);
@@ -1050,6 +1058,15 @@ const reco::VertexCompositeCandidateCollection& V0Fitter::getD0() const {
 
 const reco::VertexCompositeCandidateCollection& V0Fitter::getLambdaC() const {
   return theLambdaCs;
+}
+
+void V0Fitter::resetAll() {
+  theKshorts.clear();
+  theLambdas.clear();
+  theXis.clear();
+  theOmegas.clear();
+  theD0s.clear();
+  theLambdaCs.clear();
 }
 
 // Experimental

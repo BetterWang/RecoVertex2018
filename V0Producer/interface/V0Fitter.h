@@ -23,6 +23,7 @@
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/ESHandle.h"
 #include "FWCore/Utilities/interface/InputTag.h"
+#include "FWCore/Framework/interface/ConsumesCollector.h"
 
 #include "DataFormats/Common/interface/Ref.h"
 
@@ -68,9 +69,11 @@
 
 class V0Fitter {
  public:
-  V0Fitter(const edm::ParameterSet& theParams,
-	   const edm::Event& iEvent, const edm::EventSetup& iSetup);
+  V0Fitter(const edm::ParameterSet& theParams, edm::ConsumesCollector && iC);
+//	   const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::ConsumesCollector && iC);
   ~V0Fitter();
+
+  void fitAll(const edm::Event& iEvent, const edm::EventSetup& iSetup);
 
   // Switching to L. Lista's reco::Candidate infrastructure for V0 storage
   const reco::VertexCompositeCandidateCollection& getKshorts() const;
@@ -79,6 +82,7 @@ class V0Fitter {
   const reco::VertexCompositeCandidateCollection& getOmegas() const;
   const reco::VertexCompositeCandidateCollection& getD0() const;
   const reco::VertexCompositeCandidateCollection& getLambdaC() const;
+  void resetAll();
 
  private:
   // STL vector of VertexCompositeCandidate that will be filled with VertexCompositeCandidates by fitAll()
@@ -96,6 +100,10 @@ class V0Fitter {
 
   edm::InputTag recoAlg;
   edm::InputTag vtxAlg;
+  edm::EDGetTokenT<reco::TrackCollection> token_tracks;
+  edm::EDGetTokenT<reco::VertexCollection> token_vertices;
+  edm::EDGetTokenT<reco::BeamSpot> token_beamSpot;
+
   bool useRefTrax;
   bool storeRefTrax;
   bool doKshorts;
@@ -142,7 +150,6 @@ class V0Fitter {
   edm::InputTag vtxFitter;
 
   // Helper method that does the actual fitting using the KalmanVertexFitter
-  void fitAll(const edm::Event& iEvent, const edm::EventSetup& iSetup);
   double findV0MassError(const GlobalPoint &vtxPos, std::vector<reco::TransientTrack> dauTracks);
 
   // Applies cuts to the VertexCompositeCandidates after they are fitted/created.

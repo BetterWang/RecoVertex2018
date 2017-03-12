@@ -51,8 +51,8 @@ private:
   virtual void produce(edm::Event&, const edm::EventSetup&);
   virtual void endJob() ;
 
-  edm::ParameterSet theParams;
-      
+  V0Fitter theVees; 
+//  edm::ParameterSet theParams;
 };
 
 #endif

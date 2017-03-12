@@ -26,8 +26,9 @@
 
 // Constructor
 V0Producer::V0Producer(const edm::ParameterSet& iConfig) :
-  theParams(iConfig) {
-
+ theVees(iConfig, consumesCollector())
+//  theParams(iConfig) {
+{
    // Registering V0 Collections
   //produces<reco::VertexCollection>("Kshort");
   //produces<reco::VertexCollection>("Lambda");
@@ -59,7 +60,9 @@ void V0Producer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
 
    // Create V0Fitter object which reconstructs the vertices and creates
    //  (and contains) collections of Kshorts, Lambda0s
-   V0Fitter theVees(theParams, iEvent, iSetup);
+//   V0Fitter theVees(theParams, iEvent, iSetup);
+
+   theVees.fitAll(iEvent, iSetup);
 
    // Create auto_ptr for each collection to be stored in the Event
    std::auto_ptr< reco::VertexCompositeCandidateCollection > 
@@ -112,6 +115,8 @@ void V0Producer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
    iEvent.put( omegaCandidates, std::string("Omega") );
    iEvent.put( d0Candidates, std::string("D0") );
    iEvent.put( lambdaCCandidates, std::string("LambdaC") );
+
+   theVees.resetAll();
 }
 
 
