@@ -125,6 +125,8 @@ V0Fitter::V0Fitter(const edm::ParameterSet& theParameters,  edm::ConsumesCollect
   omegaMassCut = theParameters.getParameter<double>(string("omegaMassCut"));
   dauTransImpactSigCut = theParameters.getParameter<double>(string("dauTransImpactSigCut"));
   dauLongImpactSigCut = theParameters.getParameter<double>(string("dauLongImpactSigCut"));
+  batDauTransImpactSigCut = theParameters.getParameter<double>(string("batDauTransImpactSigCut"));
+  batDauLongImpactSigCut = theParameters.getParameter<double>(string("batDauLongImpactSigCut"));
   mPiPiCutMin = theParameters.getParameter<double>(string("mPiPiCutMin"));
   mPiPiCutMax = theParameters.getParameter<double>(string("mPiPiCutMax"));
   vtxFitter = theParameters.getParameter<edm::InputTag>("vertexFitter");
@@ -252,8 +254,8 @@ void V0Fitter::fitAll(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
       double dzerror = sqrt(tmpRef->dzError()*tmpRef->dzError()+zVtxError*zVtxError);
       double dxyerror = sqrt(tmpRef->d0Error()*tmpRef->d0Error()+xVtxError*yVtxError);
 
-      double dauTransImpactSig = dzvtx/dzerror;
-      double dauLongImpactSig = dxyvtx/dxyerror;
+      double dauLongImpactSig = dzvtx/dzerror;
+      double dauTransImpactSig = dxyvtx/dxyerror;
 //std::cout<<dxyvtx<<" "<<dauTransImpactSig<<"; "<<dzvtx<<" "<<dauLongImpactSig<<std::endl;
       if( fabs(dauTransImpactSig) > dauTransImpactSigCut && fabs(dauLongImpactSig) > dauLongImpactSigCut ) {
         theTrackRefs.push_back( tmpRef );
@@ -346,7 +348,16 @@ void V0Fitter::fitAll(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
       TransientVertex theRecoVertex;
       if(vtxFitter == std::string("KalmanVertexFitter")) {
 	KalmanVertexFitter theKalmanFitter(useRefTrax == 0 ? false : true);
-	theRecoVertex = theKalmanFitter.vertex(transTracks);
+        theRecoVertex = theKalmanFitter.vertex(transTracks);
+/*
+        vector<RefCountedKinematicParticle> dauParticles;
+        dauParticles.push_back(pFactory.particle(,piMass,chi,ndf,piMass_sigma));
+        dauParticles.push_back(pFactory.particle(protonTT,protonMass,chi,ndf,protonMass_sigma));
+
+        KinematicParticleVertexFitter theKalmanFitter;
+        RefCountedKinematicTree theRecoVertex;
+        theRecoVertex = theKalmanFitter.fit(dauParticles);
+*/
       }
       else if (vtxFitter == std::string("AdaptiveVertexFitter")) {
 	useRefTrax = false;
@@ -709,6 +720,12 @@ void V0Fitter::fitAll(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
          double dzvtx = theTrackRefs[trdx]->dz(bestvtx);
          double dxyvtx = theTrackRefs[trdx]->dxy(bestvtx);
          if(fabs(dzvtx)>50 || fabs(dxyvtx)>50) continue;
+
+         double dzerror = sqrt(theTrackRefs[trdx]->dzError()*theTrackRefs[trdx]->dzError()+zVtxError*zVtxError);
+         double dxyerror = sqrt(theTrackRefs[trdx]->d0Error()*theTrackRefs[trdx]->d0Error()+xVtxError*yVtxError);
+         double dauLongImpactSig = dzvtx/dzerror;
+         double dauTransImpactSig = dxyvtx/dxyerror;
+         if( fabs(dauTransImpactSig) < batDauTransImpactSigCut || fabs(dauLongImpactSig) < batDauLongImpactSigCut ) continue;
 
          bool match = false;
          // check if the pion is used in any v0 candidate in the collection and flag it

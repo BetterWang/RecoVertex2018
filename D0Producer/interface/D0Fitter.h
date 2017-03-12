@@ -1,9 +1,9 @@
 // -*- C++ -*-
 //
-// Package:    V0Producer
-// Class:      V0Fitter
+// Package:    D0Producer
+// Class:      D0Fitter
 // 
-/**\class V0Fitter V0Fitter.h RecoVertex/V0Producer/interface/V0Fitter.h
+/**\class D0Fitter D0Fitter.h RecoVertex/D0Producer/interface/D0Fitter.h
 
  Description: <one line class summary>
 
@@ -11,14 +11,12 @@
      <Notes on implementation>
 */
 //
-// Original Author:  Brian Drell
-//         Created:  Fri May 18 22:57:40 CEST 2007
-// $Id: V0Fitter.h,v 1.24 2010/08/05 22:06:39 wmtan Exp $
+// Original Author:  Wei Li
 //
 //
 
-#ifndef RECOVERTEX__V0_FITTER_H
-#define RECOVERTEX__V0_FITTER_H
+#ifndef RECOVERTEX__D0_FITTER_H
+#define RECOVERTEX__D0_FITTER_H
 
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/ESHandle.h"
@@ -67,31 +65,21 @@
 #include <string>
 #include <fstream>
 
-class V0Fitter {
+class D0Fitter {
  public:
-  V0Fitter(const edm::ParameterSet& theParams, edm::ConsumesCollector && iC);
+  D0Fitter(const edm::ParameterSet& theParams, edm::ConsumesCollector && iC);
 //	   const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::ConsumesCollector && iC);
-  ~V0Fitter();
+  ~D0Fitter();
 
   void fitAll(const edm::Event& iEvent, const edm::EventSetup& iSetup);
 
-  // Switching to L. Lista's reco::Candidate infrastructure for V0 storage
-  const reco::VertexCompositeCandidateCollection& getKshorts() const;
-  const reco::VertexCompositeCandidateCollection& getLambdas() const;
-  const reco::VertexCompositeCandidateCollection& getXis() const;
-  const reco::VertexCompositeCandidateCollection& getOmegas() const;
+  // Switching to L. Lista's reco::Candidate infrastructure for D0 storage
   const reco::VertexCompositeCandidateCollection& getD0() const;
-  const reco::VertexCompositeCandidateCollection& getLambdaC() const;
   void resetAll();
 
  private:
   // STL vector of VertexCompositeCandidate that will be filled with VertexCompositeCandidates by fitAll()
-  reco::VertexCompositeCandidateCollection theKshorts;
-  reco::VertexCompositeCandidateCollection theLambdas;
-  reco::VertexCompositeCandidateCollection theXis;
-  reco::VertexCompositeCandidateCollection theOmegas;
   reco::VertexCompositeCandidateCollection theD0s;
-  reco::VertexCompositeCandidateCollection theLambdaCs;
 
   // Tracker geometry for discerning hit positions
   const TrackerGeometry* trackerGeom;
@@ -104,18 +92,6 @@ class V0Fitter {
   edm::EDGetTokenT<reco::VertexCollection> token_vertices;
   edm::EDGetTokenT<reco::BeamSpot> token_beamSpot;
 
-  bool useRefTrax;
-  bool storeRefTrax;
-  bool doKshorts;
-  bool doLambdas;
-  bool doXis;
-  bool doOmegas;
-  bool doD0s;
-  bool doLambdaCs;
-
-  /*bool doPostFitCuts;
-    bool doTkQualCuts;*/
-
   // Cuts
   double tkDCACut;
   double tkChi2Cut;
@@ -127,45 +103,11 @@ class V0Fitter {
   double lVtxCut;
   double lVtxSigCut;
   double collinCut;
-  double xiChi2Cut;
-  double xiRVtxCut;
-  double xiRVtxSigCut;
-  double xiLVtxCut;
-  double xiLVtxSigCut;
-  double xiCollinCut;
-  double kShortMassCut;
-  double lambdaMassCut;
   double d0MassCut;
-  double lambdaCMassCut;
-  double xiMassCut;
-  double omegaMassCut;
   double dauTransImpactSigCut;
   double dauLongImpactSigCut;
-  double batDauTransImpactSigCut;
-  double batDauLongImpactSigCut;
-  double mPiPiCutMin;
-  double mPiPiCutMax;
-  double innerHitPosCut;
 
   std::vector<reco::TrackBase::TrackQuality> qualities;
-
-  edm::InputTag vtxFitter;
-
-  // Helper method that does the actual fitting using the KalmanVertexFitter
-  double findV0MassError(const GlobalPoint &vtxPos, std::vector<reco::TransientTrack> dauTracks);
-
-  // Applies cuts to the VertexCompositeCandidates after they are fitted/created.
-  //void applyPostFitCuts();
-
-  // Stuff for debug file output.
-  std::ofstream mPiPiMassOut;
-
-  inline void initFileOutput() {
-    mPiPiMassOut.open("mPiPi.txt", std::ios::app);
-  }
-  inline void cleanupFileOutput() {
-    mPiPiMassOut.close();
-  }
 };
 
 #endif

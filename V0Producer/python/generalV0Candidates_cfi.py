@@ -42,6 +42,8 @@ generalV0Candidates = cms.EDProducer("V0Producer",
     #   Track impact parameter significance >
     dauTransImpactSigCut = cms.double(2.),
     dauLongImpactSigCut = cms.double(2.),
+    batDauTransImpactSigCut = cms.double(2.),
+    batDauLongImpactSigCut = cms.double(2.),
     # We calculate the PCA of the tracks quickly in RPhi, extrapolating
     # the z position as well, before vertexing.  Used in the following 2 cuts:
     #   m_pipi calculated at PCA of tracks <
