@@ -40,7 +40,10 @@ V0Producer::V0Producer(const edm::ParameterSet& iConfig) :
   produces< reco::VertexCompositeCandidateCollection >("Xi");
   produces< reco::VertexCompositeCandidateCollection >("Omega");
   produces< reco::VertexCompositeCandidateCollection >("D0");
-  produces< reco::VertexCompositeCandidateCollection >("LambdaC");
+  produces< reco::VertexCompositeCandidateCollection >("DS");
+  produces< reco::VertexCompositeCandidateCollection >("DPM");
+  produces< reco::VertexCompositeCandidateCollection >("LambdaCToLamPi");
+  produces< reco::VertexCompositeCandidateCollection >("LambdaCToKsP");
   //produces< reco::VertexCompositeCandidateCollection >("LambdaBar");
 
 }
@@ -86,8 +89,20 @@ void V0Producer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
    d0Candidates->reserve( theVees.getD0().size() );
 
    std::auto_ptr< reco::VertexCompositeCandidateCollection >
-     lambdaCCandidates( new reco::VertexCompositeCandidateCollection );
-   lambdaCCandidates->reserve( theVees.getLambdaC().size() );
+     dsCandidates( new reco::VertexCompositeCandidateCollection );
+   dsCandidates->reserve( theVees.getDS().size() );
+
+   std::auto_ptr< reco::VertexCompositeCandidateCollection >
+     dpmCandidates( new reco::VertexCompositeCandidateCollection );
+   dpmCandidates->reserve( theVees.getDPM().size() );
+
+   std::auto_ptr< reco::VertexCompositeCandidateCollection >
+     lambdaCCandidates1( new reco::VertexCompositeCandidateCollection );
+   lambdaCCandidates1->reserve( theVees.getLambdaCToLamPi().size() );
+
+   std::auto_ptr< reco::VertexCompositeCandidateCollection >
+     lambdaCCandidates2( new reco::VertexCompositeCandidateCollection );
+   lambdaCCandidates2->reserve( theVees.getLambdaCToKsP().size() );
 
    std::copy( theVees.getKshorts().begin(),
 	      theVees.getKshorts().end(),
@@ -104,9 +119,18 @@ void V0Producer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
    std::copy( theVees.getD0().begin(),
               theVees.getD0().end(),
               std::back_inserter(*d0Candidates) );
-   std::copy( theVees.getLambdaC().begin(),
-              theVees.getLambdaC().end(),
-              std::back_inserter(*lambdaCCandidates) );
+   std::copy( theVees.getDS().begin(),
+              theVees.getDS().end(),
+              std::back_inserter(*dsCandidates) );
+   std::copy( theVees.getDPM().begin(),
+              theVees.getDPM().end(),
+              std::back_inserter(*dpmCandidates) );
+   std::copy( theVees.getLambdaCToLamPi().begin(),
+              theVees.getLambdaCToLamPi().end(),
+              std::back_inserter(*lambdaCCandidates1) );
+   std::copy( theVees.getLambdaCToKsP().begin(),
+              theVees.getLambdaCToKsP().end(),
+              std::back_inserter(*lambdaCCandidates2) );
 
    // Write the collections to the Event
    iEvent.put( kShortCandidates, std::string("Kshort") );
@@ -114,7 +138,10 @@ void V0Producer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
    iEvent.put( xiCandidates, std::string("Xi") );
    iEvent.put( omegaCandidates, std::string("Omega") );
    iEvent.put( d0Candidates, std::string("D0") );
-   iEvent.put( lambdaCCandidates, std::string("LambdaC") );
+   iEvent.put( dsCandidates, std::string("DS") );
+   iEvent.put( dpmCandidates, std::string("DPM") );
+   iEvent.put( lambdaCCandidates1, std::string("LambdaCToLamPi") );
+   iEvent.put( lambdaCCandidates2, std::string("LambdaCToKsP") );
 
    theVees.resetAll();
 }

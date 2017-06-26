@@ -81,7 +81,10 @@ class V0Fitter {
   const reco::VertexCompositeCandidateCollection& getXis() const;
   const reco::VertexCompositeCandidateCollection& getOmegas() const;
   const reco::VertexCompositeCandidateCollection& getD0() const;
-  const reco::VertexCompositeCandidateCollection& getLambdaC() const;
+  const reco::VertexCompositeCandidateCollection& getDS() const;
+  const reco::VertexCompositeCandidateCollection& getDPM() const;
+  const reco::VertexCompositeCandidateCollection& getLambdaCToLamPi() const;
+  const reco::VertexCompositeCandidateCollection& getLambdaCToKsP() const;
   void resetAll();
 
  private:
@@ -91,7 +94,10 @@ class V0Fitter {
   reco::VertexCompositeCandidateCollection theXis;
   reco::VertexCompositeCandidateCollection theOmegas;
   reco::VertexCompositeCandidateCollection theD0s;
-  reco::VertexCompositeCandidateCollection theLambdaCs;
+  reco::VertexCompositeCandidateCollection theDSs;
+  reco::VertexCompositeCandidateCollection theDPMs;
+  reco::VertexCompositeCandidateCollection theLambdaCToLamPis;
+  reco::VertexCompositeCandidateCollection theLambdaCToKsPs;
 
   // Tracker geometry for discerning hit positions
   const TrackerGeometry* trackerGeom;
@@ -111,7 +117,10 @@ class V0Fitter {
   bool doXis;
   bool doOmegas;
   bool doD0s;
-  bool doLambdaCs;
+  bool doDSs;
+  bool doDPMs;
+  bool doLambdaCToLamPis;
+  bool doLambdaCToKsPs;
 
   /*bool doPostFitCuts;
     bool doTkQualCuts;*/
@@ -136,6 +145,8 @@ class V0Fitter {
   double kShortMassCut;
   double lambdaMassCut;
   double d0MassCut;
+  double dsMassCut;
+  double dpmMassCut;
   double lambdaCMassCut;
   double xiMassCut;
   double omegaMassCut;
