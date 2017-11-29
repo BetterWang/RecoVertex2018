@@ -99,6 +99,7 @@ D0Fitter::D0Fitter(const edm::ParameterSet& theParameters,  edm::ConsumesCollect
   VtxChiProbCut = theParameters.getParameter<double>(string("VtxChiProbCut"));
   dPtCut = theParameters.getParameter<double>(string("dPtCut"));
   alphaCut = theParameters.getParameter<double>(string("alphaCut"));
+  isWrongSign = theParameters.getParameter<bool>(string("isWrongSign"));
 
   std::vector<std::string> qual = theParameters.getParameter<std::vector<std::string> >("trackQualities");
   for (unsigned int ndx = 0; ndx < qual.size(); ndx++) {
@@ -231,19 +232,25 @@ void D0Fitter::fitAll(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
       // Look at the two tracks we're looping over.  If they're oppositely
       //  charged, load them into the hypothesized positive and negative tracks
       //  and references to be sent to the KalmanVertexFitter
-      if(theTrackRefs[trdx1]->charge() < 0. && 
+      if(!isWrongSign && theTrackRefs[trdx1]->charge() < 0. && 
 	 theTrackRefs[trdx2]->charge() > 0.) {
 	negativeTrackRef = theTrackRefs[trdx1];
 	positiveTrackRef = theTrackRefs[trdx2];
 	negTransTkPtr = &theTransTracks[trdx1];
 	posTransTkPtr = &theTransTracks[trdx2];
       }
-      else if(theTrackRefs[trdx1]->charge() > 0. &&
+      else if(!isWrongSign && theTrackRefs[trdx1]->charge() > 0. &&
 	      theTrackRefs[trdx2]->charge() < 0.) {
 	negativeTrackRef = theTrackRefs[trdx2];
 	positiveTrackRef = theTrackRefs[trdx1];
 	negTransTkPtr = &theTransTracks[trdx2];
 	posTransTkPtr = &theTransTracks[trdx1];
+      }
+      else if(isWrongSign && theTrackRefs[trdx1]->charge()*theTrackRefs[trdx2]->charge() > 0.0) { 
+        negativeTrackRef = theTrackRefs[trdx2];
+        positiveTrackRef = theTrackRefs[trdx1];
+        negTransTkPtr = &theTransTracks[trdx2];
+        posTransTkPtr = &theTransTracks[trdx1];
       }
       // If they're not 2 oppositely charged tracks, loop back to the
       //  beginning and try the next pair.
@@ -427,6 +434,12 @@ void D0Fitter::fitAll(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
                                                    negCandTotalP.y(), negCandTotalP.z(),
                                                    negCandTotalE[i]), d0Vtx);
         theNegCand.setTrack(negativeTrackRef);
+
+        if(isWrongSign)
+        {
+          thePosCand.setCharge(theTrackRefs[trdx1]->charge());
+          theNegCand.setCharge(theTrackRefs[trdx1]->charge());
+        }
 
         AddFourMomenta addp4;
         theD0->addDaughter(thePosCand);

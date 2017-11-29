@@ -28,5 +28,7 @@ generalD0Candidates = cms.EDProducer("D0Producer",
     vtxSignificance2DCut = cms.double(0.0),
     vtxSignificance3DCut = cms.double(0.0),
     d0MassCut = cms.double(0.2),
-    dPtCut = cms.double(0.3)
+    dPtCut = cms.double(0.3),
+
+    isWrongSign = cms.bool(False)
 )
