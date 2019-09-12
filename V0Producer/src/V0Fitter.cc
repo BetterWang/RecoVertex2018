@@ -104,6 +104,7 @@ V0Fitter::V0Fitter(const edm::ParameterSet& theParameters,  edm::ConsumesCollect
   //  -whether to reconstruct D0
   doLambdaCToLamPis = theParameters.getParameter<bool>(string("selectLambdaCToLamPis"));
   doLambdaCToKsPs = theParameters.getParameter<bool>(string("selectLambdaCToKsPs"));
+  isWrongSign = theParameters.getUntrackedParameter<bool>(string("isWrongSign"), false);
 
   // Second, initialize post-fit cuts
   tkDCACut = theParameters.getParameter<double>(string("tkDCACut"));
@@ -289,23 +290,32 @@ void V0Fitter::fitAll(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
       // Look at the two tracks we're looping over.  If they're oppositely
       //  charged, load them into the hypothesized positive and negative tracks
       //  and references to be sent to the KalmanVertexFitter
-      if(theTrackRefs[trdx1]->charge() < 0. && 
-	 theTrackRefs[trdx2]->charge() > 0.) {
-	negativeTrackRef = theTrackRefs[trdx1];
-	positiveTrackRef = theTrackRefs[trdx2];
-	negTransTkPtr = &theTransTracks[trdx1];
-	posTransTkPtr = &theTransTracks[trdx2];
-      }
-      else if(theTrackRefs[trdx1]->charge() > 0. &&
-	      theTrackRefs[trdx2]->charge() < 0.) {
-	negativeTrackRef = theTrackRefs[trdx2];
-	positiveTrackRef = theTrackRefs[trdx1];
-	negTransTkPtr = &theTransTracks[trdx2];
-	posTransTkPtr = &theTransTracks[trdx1];
+      if ( !isWrongSign ) {
+          if(theTrackRefs[trdx1]->charge() < 0. && 
+                  theTrackRefs[trdx2]->charge() > 0.) {
+              negativeTrackRef = theTrackRefs[trdx1];
+              positiveTrackRef = theTrackRefs[trdx2];
+              negTransTkPtr = &theTransTracks[trdx1];
+              posTransTkPtr = &theTransTracks[trdx2];
+          }
+          else if(theTrackRefs[trdx1]->charge() > 0. &&
+                  theTrackRefs[trdx2]->charge() < 0.) {
+              negativeTrackRef = theTrackRefs[trdx2];
+              positiveTrackRef = theTrackRefs[trdx1];
+              negTransTkPtr = &theTransTracks[trdx2];
+              posTransTkPtr = &theTransTracks[trdx1];
+          }
+          else continue;
+      } else {
+          if ( theTrackRefs[trdx1]->charge() == theTrackRefs[trdx2]->charge() ) {
+              negativeTrackRef = theTrackRefs[trdx1];
+              positiveTrackRef = theTrackRefs[trdx2];
+              negTransTkPtr = &theTransTracks[trdx1];
+              posTransTkPtr = &theTransTracks[trdx2];
+          } else continue;
       }
       // If they're not 2 oppositely charged tracks, loop back to the
       //  beginning and try the next pair.
-      else continue;
 
       // Fill the vector of TransientTracks to send to KVF
       transTracks.push_back(*posTransTkPtr);
@@ -353,6 +363,7 @@ void V0Fitter::fitAll(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
 
       if( mass > mPiPiCutMax || mass < mPiPiCutMin ) continue;
 
+//      std::cout << " --> " << __LINE__ << std::endl;
       // Create the vertex fitter object and vertex the tracks
       TransientVertex theRecoVertex;
       if(vtxFitter == std::string("KalmanVertexFitter")) {
@@ -380,6 +391,7 @@ void V0Fitter::fitAll(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
 	continue;
       }
 
+//      std::cout << " --> " << __LINE__ << std::endl;
       // Create reco::Vertex object for use in creating the Candidate
       reco::Vertex theVtx = theRecoVertex;
       // Create and fill vector of refitted TransientTracks
@@ -410,6 +422,7 @@ void V0Fitter::fitAll(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
       if(isVtxPV) totalCov = theVtx.covariance() + vtxPrimary->covariance(); 
       else totalCov = theVtx.covariance() + theBeamSpotHandle->rotatedCovariance3D();
 
+//      std::cout << " --> " << __LINE__ << std::endl;
       SVector3 distanceVector3D(V0LineOfFlight.x(), V0LineOfFlight.y(), V0LineOfFlight.z());
       SVector3 distanceVector2D(V0LineOfFlight.x(), V0LineOfFlight.y(), 0.0);
       
@@ -443,15 +456,22 @@ void V0Fitter::fitAll(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
 	  continue;
 	}
       }
+//      std::cout << " --> " << __LINE__ << " normalizedChi2 = " << theVtx.normalizedChi2() << " rVtxMag = " << rVtxMag << " rVtxMag / sigmaRvtxMag = " << rVtxMag / sigmaRvtxMag << " lVtxMag = " << lVtxMag << " lVtxMag / sigmaLvtxMag = " << lVtxMag / sigmaLvtxMag << " cos(V0Angle) = " << cos(V0Angle) << " V0Angle = " << V0Angle << std::endl;
       
-      if( theVtx.normalizedChi2() > chi2Cut ||
-	  rVtxMag < rVtxCut ||
-	  rVtxMag / sigmaRvtxMag < rVtxSigCut ||
-          lVtxMag < lVtxCut ||
-          lVtxMag / sigmaLvtxMag < lVtxSigCut ||
-          cos(V0Angle) < collinCut
-      )	continue;
+//      std::cout << " --> " << __LINE__ << " theVtx.normalizedChi2() = " << theVtx.normalizedChi2() << " " << chi2Cut << std::endl;
+      if ( theVtx.normalizedChi2() > chi2Cut ) continue;
+//      std::cout << " --> " << __LINE__ << " rVtxMag = " << rVtxMag << " " << rVtxCut << std::endl;
+	  if ( rVtxMag < rVtxCut ) continue;
+//      std::cout << " --> " << __LINE__ << " rVtxMag / sigmaRvtxMag = " << rVtxMag / sigmaRvtxMag << " " << rVtxSigCut << std::endl;
+	  if ( rVtxMag / sigmaRvtxMag < rVtxSigCut ) continue;
+//      std::cout << " --> " << __LINE__ << " lVtxMag = " << lVtxMag << " " << lVtxCut << std::endl;
+      if ( lVtxMag < lVtxCut ) continue;
+//      std::cout << " --> " << __LINE__ << " lVtxMag / sigmaLvtxMag = " << lVtxMag / sigmaLvtxMag << " " << lVtxSigCut << std::endl;
+      if ( lVtxMag / sigmaLvtxMag < lVtxSigCut ) continue;
+//      std::cout << " --> " << __LINE__ << " cos(V0Angle) = " << cos(V0Angle) << " " << collinCut << std::endl;
+      if ( cos(V0Angle) < collinCut ) continue;
 
+//      std::cout << " --> " << __LINE__ << " refittedTrax.size() = " << refittedTrax.size() << std::endl;
       // Cuts finished, now we create the candidates and push them back into the collections.
       
       std::auto_ptr<TrajectoryStateClosestToPoint> trajPlus;
@@ -467,15 +487,23 @@ void V0Fitter::fitAll(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
 	TransientTrack* thePositiveRefTrack = 0;
 	TransientTrack* theNegativeRefTrack = 0;
         
-	for( ; traxIter != traxEnd; ++traxIter) {
-	  if( traxIter->track().charge() > 0. ) {
-	    thePositiveRefTrack = &*traxIter;
-	  }
-	  else if (traxIter->track().charge() < 0.) {
-	    theNegativeRefTrack = &*traxIter;
-	  }
-	}
+    if ( isWrongSign ) {
+        thePositiveRefTrack = &*traxIter;
+        traxIter++;
+        theNegativeRefTrack = &*traxIter;
+    } else {
+        for( ; traxIter != traxEnd; ++traxIter) {
+            if( traxIter->track().charge() > 0. ) {
+                thePositiveRefTrack = &*traxIter;
+            }
+            else if (traxIter->track().charge() < 0.) {
+                theNegativeRefTrack = &*traxIter;
+            }
+        }
+    }
+//      std::cout << " --> " << __LINE__ << " " << thePositiveRefTrack << " " << theNegativeRefTrack << std::endl;
         if (thePositiveRefTrack == 0 || theNegativeRefTrack == 0) continue;
+//      std::cout << " --> " << __LINE__ << std::endl;
 	trajPlus.reset(new TrajectoryStateClosestToPoint(thePositiveRefTrack->trajectoryStateClosestToPoint(vtxPos)));
 	trajMins.reset(new TrajectoryStateClosestToPoint(theNegativeRefTrack->trajectoryStateClosestToPoint(vtxPos)));
       }
@@ -485,7 +513,9 @@ void V0Fitter::fitAll(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
 
       }
 
+//      std::cout << " --> " << __LINE__ << std::endl;
       if( trajPlus.get() == 0 || trajMins.get() == 0 || !trajPlus->isValid() || !trajMins->isValid() ) continue;
+//      std::cout << " --> " << __LINE__ << std::endl;
 
       posTransTkPtr = negTransTkPtr = 0;
 
@@ -497,6 +527,7 @@ void V0Fitter::fitAll(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
       trajPlus.reset();
       trajMins.reset();
 
+//      std::cout << " --> " << __LINE__ << std::endl;
       // calculate total energy of V0 3 ways:
       //  Assume it's a kShort, a Lambda, or a LambdaBar.
       double piPlusE = sqrt( positiveP.mag2() + piMassSquared );
@@ -610,6 +641,7 @@ void V0Fitter::fitAll(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
 	if( theKshort->mass() < kShortMass + kShortMassCut &&
 	    theKshort->mass() > kShortMass - kShortMassCut ) {
 	  theKshorts.push_back( *theKshort );
+//      std::cout << " --> " << __LINE__ << std::endl;
 	}
       }
       
@@ -621,6 +653,7 @@ void V0Fitter::fitAll(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
 	if( theLambda->mass() < lambdaMass + lambdaMassCut &&
 	    theLambda->mass() > lambdaMass - lambdaMassCut ) {
 	  theLambdas.push_back( *theLambda );
+//      std::cout << " --> " << __LINE__ << std::endl;
 	}
       }
       else if ( doLambdas && theLambdaBar ) {
@@ -631,6 +664,7 @@ void V0Fitter::fitAll(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
 	if( theLambdaBar->mass() < lambdaMass + lambdaMassCut &&
 	    theLambdaBar->mass() > lambdaMass - lambdaMassCut ) {
 	  theLambdas.push_back( *theLambdaBar );
+//      std::cout << " --> " << __LINE__ << std::endl;
 	}
       }
 

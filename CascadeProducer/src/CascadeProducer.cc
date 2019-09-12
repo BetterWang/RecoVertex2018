@@ -52,16 +52,16 @@ void CascadeProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
    //  (and contains) collections of Kshorts, Lambda0s
    CascadeFitter theVees(theParams, iEvent, iSetup);
 
-   // Create auto_ptr for each collection to be stored in the Event
-   std::auto_ptr< reco::VertexCompositeCandidateCollection >
+   // Create unique_ptr for each collection to be stored in the Event
+   std::unique_ptr< reco::VertexCompositeCandidateCollection >
      xiCandidates( new reco::VertexCompositeCandidateCollection );
    xiCandidates->reserve( theVees.getXis().size() );
 
-   std::auto_ptr< reco::VertexCompositeCandidateCollection >
+   std::unique_ptr< reco::VertexCompositeCandidateCollection >
      omegaCandidates( new reco::VertexCompositeCandidateCollection );
    omegaCandidates->reserve( theVees.getOmegas().size() );
 
-   std::auto_ptr< reco::VertexCompositeCandidateCollection >
+   std::unique_ptr< reco::VertexCompositeCandidateCollection >
      lambdaCCandidates( new reco::VertexCompositeCandidateCollection );
    lambdaCCandidates->reserve( theVees.getLambdaC().size() );
 
@@ -76,9 +76,9 @@ void CascadeProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
               std::back_inserter(*lambdaCCandidates) );
 
    // Write the collections to the Event
-   iEvent.put( xiCandidates, std::string("Xi") );
-   iEvent.put( omegaCandidates, std::string("Omega") );
-   iEvent.put( lambdaCCandidates, std::string("LambdaC") );
+   iEvent.put( std::move(xiCandidates), std::string("Xi") );
+   iEvent.put( std::move(omegaCandidates), std::string("Omega") );
+   iEvent.put( std::move(lambdaCCandidates), std::string("LambdaC") );
 }
 
 

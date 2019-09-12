@@ -67,40 +67,40 @@ void V0Producer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
 
    theVees.fitAll(iEvent, iSetup);
 
-   // Create auto_ptr for each collection to be stored in the Event
-   std::auto_ptr< reco::VertexCompositeCandidateCollection > 
+   // Create unique_ptr for each collection to be stored in the Event
+   std::unique_ptr< reco::VertexCompositeCandidateCollection > 
      kShortCandidates( new reco::VertexCompositeCandidateCollection );
    kShortCandidates->reserve( theVees.getKshorts().size() ); 
 
-   std::auto_ptr< reco::VertexCompositeCandidateCollection >
+   std::unique_ptr< reco::VertexCompositeCandidateCollection >
      lambdaCandidates( new reco::VertexCompositeCandidateCollection );
    lambdaCandidates->reserve( theVees.getLambdas().size() );
 
-   std::auto_ptr< reco::VertexCompositeCandidateCollection >
+   std::unique_ptr< reco::VertexCompositeCandidateCollection >
      xiCandidates( new reco::VertexCompositeCandidateCollection );
    xiCandidates->reserve( theVees.getXis().size() );
 
-   std::auto_ptr< reco::VertexCompositeCandidateCollection >
+   std::unique_ptr< reco::VertexCompositeCandidateCollection >
      omegaCandidates( new reco::VertexCompositeCandidateCollection );
    omegaCandidates->reserve( theVees.getOmegas().size() );
 
-   std::auto_ptr< reco::VertexCompositeCandidateCollection >
+   std::unique_ptr< reco::VertexCompositeCandidateCollection >
      d0Candidates( new reco::VertexCompositeCandidateCollection );
    d0Candidates->reserve( theVees.getD0().size() );
 
-   std::auto_ptr< reco::VertexCompositeCandidateCollection >
+   std::unique_ptr< reco::VertexCompositeCandidateCollection >
      dsCandidates( new reco::VertexCompositeCandidateCollection );
    dsCandidates->reserve( theVees.getDS().size() );
 
-   std::auto_ptr< reco::VertexCompositeCandidateCollection >
+   std::unique_ptr< reco::VertexCompositeCandidateCollection >
      dpmCandidates( new reco::VertexCompositeCandidateCollection );
    dpmCandidates->reserve( theVees.getDPM().size() );
 
-   std::auto_ptr< reco::VertexCompositeCandidateCollection >
+   std::unique_ptr< reco::VertexCompositeCandidateCollection >
      lambdaCCandidates1( new reco::VertexCompositeCandidateCollection );
    lambdaCCandidates1->reserve( theVees.getLambdaCToLamPi().size() );
 
-   std::auto_ptr< reco::VertexCompositeCandidateCollection >
+   std::unique_ptr< reco::VertexCompositeCandidateCollection >
      lambdaCCandidates2( new reco::VertexCompositeCandidateCollection );
    lambdaCCandidates2->reserve( theVees.getLambdaCToKsP().size() );
 
@@ -133,15 +133,15 @@ void V0Producer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
               std::back_inserter(*lambdaCCandidates2) );
 
    // Write the collections to the Event
-   iEvent.put( kShortCandidates, std::string("Kshort") );
-   iEvent.put( lambdaCandidates, std::string("Lambda") );
-   iEvent.put( xiCandidates, std::string("Xi") );
-   iEvent.put( omegaCandidates, std::string("Omega") );
-   iEvent.put( d0Candidates, std::string("D0") );
-   iEvent.put( dsCandidates, std::string("DS") );
-   iEvent.put( dpmCandidates, std::string("DPM") );
-   iEvent.put( lambdaCCandidates1, std::string("LambdaCToLamPi") );
-   iEvent.put( lambdaCCandidates2, std::string("LambdaCToKsP") );
+   iEvent.put( std::move(kShortCandidates), std::string("Kshort") );
+   iEvent.put( std::move(lambdaCandidates), std::string("Lambda") );
+   iEvent.put( std::move(xiCandidates), std::string("Xi") );
+   iEvent.put( std::move(omegaCandidates), std::string("Omega") );
+   iEvent.put( std::move(d0Candidates), std::string("D0") );
+   iEvent.put( std::move(dsCandidates), std::string("DS") );
+   iEvent.put( std::move(dpmCandidates), std::string("DPM") );
+   iEvent.put( std::move(lambdaCCandidates1), std::string("LambdaCToLamPi") );
+   iEvent.put( std::move(lambdaCCandidates2), std::string("LambdaCToKsP") );
 
    theVees.resetAll();
 }
